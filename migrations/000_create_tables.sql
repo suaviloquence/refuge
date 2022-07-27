@@ -1,0 +1,3 @@
+CREATE TABLE pings (
+	pings INTEGER NOT NULL
+);
