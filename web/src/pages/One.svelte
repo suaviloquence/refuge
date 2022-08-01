@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onMount, getContext } from "svelte";
-	import type { linkTo } from "../Router.svelte";
-
-	const linkTo = getContext<linkTo>("linkTo");
+	import { lpath } from "../Router.svelte";
 
 	let name: string;
 	let disabled = true;
@@ -50,6 +48,6 @@
 	<input id="name" bind:value={name} />
 </div>
 
-<button {disabled} on:click={() => linkTo(`/two/${name}`)}>
+<button {disabled} on:click={() => $path = `/two/${name}`}>
 	Go to two!
 </button>

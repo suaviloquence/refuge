@@ -1,13 +1,13 @@
 <script context="module" lang="ts">
-  export type linkTo = (path: string) => void;
+  import { writable, type Writable } from "svelte/store";
+
+	export const path: Writable<string> = writable(window.location.pathname);
 </script>
 
 <script lang="ts">
-  import { setContext, type SvelteComponent } from "svelte";
+  import type { SvelteComponent } from "svelte";
 	import One from "./pages/One.svelte";
 	import Two from "./pages/Two.svelte";
-
-  setContext<linkTo>("linkTo", linkTo);
 
   /// e.g., set to /app so /home corresponds to example.com/app/home
   const PREFIX = "";
@@ -28,10 +28,10 @@
   let currentComponent = defaultComponent;
   let props: Record<string, any> = {};
 
-  export function linkTo(path: string) {
+  path.subscribe((path) => {
     history.pushState({}, "", path);
     updateRoute(path);
-  }
+  });
 
   window.onpopstate = () => {
     updateRoute(window.location.pathname);
