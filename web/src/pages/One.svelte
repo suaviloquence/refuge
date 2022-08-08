@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, getContext } from "svelte";
-	import { lpath } from "../Router.svelte";
+	import { path } from "../stores";
 
 	let name: string;
 	let disabled = true;

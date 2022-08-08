@@ -1,9 +1,3 @@
-<script context="module" lang="ts">
-  import { writable, type Writable } from "svelte/store";
-
-	export const path: Writable<string> = writable(window.location.pathname);
-</script>
-
 <script lang="ts">
   import type { SvelteComponent } from "svelte";
 	import One from "./pages/One.svelte";
