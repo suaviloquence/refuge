@@ -1,6 +1,6 @@
 <script lang="ts">
-	import One from "./pages/One.svelte";
-	import Router from "./Router.svelte";
+  import Dashboard from "./pages/Dashboard.svelte";
+  import Router from "./Router.svelte";
 </script>
 
-<Router defaultComponent={One} />
+<Router defaultComponent={Dashboard} />
