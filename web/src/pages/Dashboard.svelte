@@ -1,53 +1,102 @@
 <script lang="ts">
-	import { onMount, getContext } from "svelte";
-	import { path } from "../stores";
+  import { onMount } from "svelte";
+  import { path } from "../stores";
 
-	let name: string;
-	let disabled = true;
+  let todos: { id: number; text: string; completed: boolean }[] | null = null;
 
-	let pings: number | null = null;
+  let auth: string;
 
-	let pinging = false;
+  onMount(async () => {
+    auth = localStorage.getItem("auth");
 
-	async function ping() {
-		pinging = true;
+    if (!auth) $path = "/login";
 
-		const res = await fetch("/api/ping/", { method: "PUT" });
-		const json = await res.json();
-		pings = json.pings;
+    const res = await fetch("/api/todo", {
+      headers: {
+        authorization: `Bearer ${auth}`,
+      },
+    });
 
-		pinging = false;
-	}
+    if (!res.ok) {
+      localStorage.removeItem("auth");
+      $path = "/login";
+    }
 
-	onMount(async () => {
-		const res = await fetch("/api/ping/");
-		if (res.ok) {
-			const json = await res.json();
-			pings = json.pings;
-		} else {
-			pings = 0;
-		}
-	});
+    todos = await res.json();
+  });
 
-	$: disabled = !/^\w+$/.test(name);
+  let disabled = false;
+
+  async function toggle(i: number) {
+    disabled = true;
+
+    const todo = todos[i];
+    todo.completed = !todo.completed;
+
+    await fetch(`/api/todo/${todo.id}`, {
+      method: "put",
+      headers: {
+        authorization: `Bearer ${auth}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(todo),
+    });
+
+    disabled = false;
+  }
+
+  let text: string;
+
+  const PLACEHOLDERS = [
+    "Make a pillow fort",
+    "Call family",
+    "Contribute to open-source software",
+  ];
+
+  async function create() {
+    disabled = true;
+    const todo = await (
+      await fetch("/api/todo", {
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      })
+    ).json();
+
+    todos = [todo, ...todos];
+    text = "";
+
+    disabled = false;
+  }
 </script>
 
-<h1>Page One</h1>
-
-<div>
-	{#if pings == null}
-		Loading pings...
-	{:else}
-		Pings: {pings}
-		<button disabled={pinging} on:click={ping}>Ping</button>
-	{/if}
-</div>
-
-<div>
-	<label for="name">Name: </label>
-	<input id="name" bind:value={name} />
-</div>
-
-<button {disabled} on:click={() => $path = `/two/${name}`}>
-	Go to two!
-</button>
+{#if !todos}
+  <p>Loading todo list...</p>
+{:else}
+  <form on:submit|preventDefault={create} {disabled}>
+    <input
+      type="text"
+      bind:value={text}
+      required
+      placeholder={PLACEHOLDERS[
+        Math.floor(Math.random() * PLACEHOLDERS.length)
+      ]}
+    />
+    <button type="submit">+</button>
+  </form>
+  {#each todos as todo, i}
+    <div>
+      <input
+        id={todo.id.toString()}
+        type="checkbox"
+        checked={todo.completed}
+        on:click={() => toggle(i)}
+        {disabled}
+      />
+      <label for={todo.id.toString()}>{todo.text}</label>
+    </div>
+  {/each}
+{/if}

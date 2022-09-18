@@ -5,7 +5,8 @@ use actix_web::{
 use log::info;
 use std::fmt;
 
-mod user;
+mod authorization;
+mod todo;
 
 pub trait IntoHttpError<T> {
 	fn into_400(self) -> actix_web::Result<T>;
@@ -35,5 +36,8 @@ pub fn configure(cfg: &mut ServiceConfig) {
 		info!("Error deserializing JSON: {:?}", err);
 		actix_web::error::ErrorBadRequest(err)
 	}))
-	.service(web::scope("/ping").configure(user::configure));
+	.service(web::scope("/user").configure(authorization::configure))
+	.service(web::scope("/todo").configure(todo::configure));
 }
+
+pub(crate) use authorization::jwt::JwtConfig;

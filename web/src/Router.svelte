@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SvelteComponent } from "svelte";
   import Dashboard from "./pages/Dashboard.svelte";
+  import Login from "./pages/Login.svelte";
   import { path } from "./stores";
 
   /// e.g., set to /app so /home corresponds to example.com/app/home
@@ -9,6 +10,7 @@
   type Component = typeof SvelteComponent;
 
   const routes: Record<string, Component> = {
+    "/(?<mode>(signup)|(login))": Login,
     "/(?:.*)": Dashboard,
   };
 
