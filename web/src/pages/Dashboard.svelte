@@ -1,21 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { path } from "../stores";
+  import Todo from "../components/Todo.svelte";
+  import { auth, authGet, authJson, path } from "../stores";
 
   let todos: { id: number; text: string; completed: boolean }[] | null = null;
 
-  let auth: string;
-
   onMount(async () => {
-    auth = localStorage.getItem("auth");
+    $auth = localStorage.getItem("auth");
 
     if (!auth) $path = "/login";
 
-    const res = await fetch("/api/todo", {
-      headers: {
-        authorization: `Bearer ${auth}`,
-      },
-    });
+    const res = await $authGet("/api/todo");
 
     if (!res.ok) {
       localStorage.removeItem("auth");
@@ -56,14 +51,7 @@
   async function create() {
     disabled = true;
     const todo = await (
-      await fetch("/api/todo", {
-        method: "post",
-        headers: {
-          Authorization: `Bearer ${auth}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      })
+      await $authJson("/api/todo", { text }, { method: "post" })
     ).json();
 
     todos = [todo, ...todos];
@@ -71,32 +59,33 @@
 
     disabled = false;
   }
+
+  let editMode = false;
+  async function toggleEdit() {
+    editMode = !editMode;
+  }
 </script>
 
 {#if !todos}
   <p>Loading todo list...</p>
 {:else}
   <form on:submit|preventDefault={create} {disabled}>
-    <input
-      type="text"
-      bind:value={text}
-      required
-      placeholder={PLACEHOLDERS[
-        Math.floor(Math.random() * PLACEHOLDERS.length)
-      ]}
-    />
-    <button type="submit">+</button>
-  </form>
-  {#each todos as todo, i}
     <div>
       <input
-        id={todo.id.toString()}
-        type="checkbox"
-        checked={todo.completed}
-        on:click={() => toggle(i)}
-        {disabled}
+        type="text"
+        bind:value={text}
+        required
+        placeholder={PLACEHOLDERS[
+          Math.floor(Math.random() * PLACEHOLDERS.length)
+        ]}
       />
-      <label for={todo.id.toString()}>{todo.text}</label>
+      <button type="submit">+</button>
+      <button type="button" on:click={toggleEdit}
+        >{editMode ? "Done" : "Edit"}</button
+      >
     </div>
+  </form>
+  {#each todos as todo, i}
+    <Todo {editMode} {...todo} />
   {/each}
 {/if}
