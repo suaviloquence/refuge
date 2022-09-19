@@ -16,6 +16,7 @@ pub struct Todo {
 	#[serde(skip, default = "idx_default")]
 	pub idx: i64,
 	pub completed: bool,
+	pub cleared: bool,
 }
 
 impl Todo {
@@ -31,7 +32,7 @@ impl Todo {
 	) -> sqlx::Result<Vec<Self>> {
 		sqlx::query_as!(
 			Self,
-			"SELECT * FROM todos WHERE username = $1 ORDER BY idx, id DESC",
+			"SELECT * FROM todos WHERE username = $1 AND NOT cleared ORDER BY idx, id DESC",
 			username
 		)
 		.fetch_all(con)
@@ -43,6 +44,7 @@ impl Todo {
 		text: String,
 		idx: i64,
 		completed: bool,
+		cleared: bool,
 		con: impl Executor<'_>,
 	) -> sqlx::Result<Self> {
 		let id = sqlx::query!(
@@ -50,12 +52,14 @@ impl Todo {
 				username,
 				text,
 				idx,
-				completed
-			) VALUES ($1, $2, $3, $4) RETURNING id",
+				completed,
+				cleared
+			) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 			username,
 			text,
 			idx,
 			completed,
+			cleared,
 		)
 		.fetch_one(con)
 		.await?
@@ -67,6 +71,7 @@ impl Todo {
 			text,
 			idx,
 			completed,
+			cleared,
 		})
 	}
 
@@ -90,10 +95,5 @@ impl Todo {
 		.await?;
 
 		Ok(())
-	}
-
-	pub async fn complete(&mut self, con: impl Executor<'_>) -> sqlx::Result<()> {
-		self.completed = true;
-		self.update(con).await
 	}
 }

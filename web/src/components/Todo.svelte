@@ -1,3 +1,12 @@
+<script lang="ts" context="module">
+  export interface Todo {
+    id: number;
+    text: string;
+    completed: boolean;
+    cleared: boolean;
+  }
+</script>
+
 <script lang="ts">
   import { authJson } from "../stores";
 

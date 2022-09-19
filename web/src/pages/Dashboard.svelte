@@ -22,24 +22,6 @@
 
   let disabled = false;
 
-  async function toggle(i: number) {
-    disabled = true;
-
-    const todo = todos[i];
-    todo.completed = !todo.completed;
-
-    await fetch(`/api/todo/${todo.id}`, {
-      method: "put",
-      headers: {
-        authorization: `Bearer ${auth}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(todo),
-    });
-
-    disabled = false;
-  }
-
   let text: string;
 
   const PLACEHOLDERS = [
@@ -61,8 +43,11 @@
   }
 
   let editMode = false;
-  async function toggleEdit() {
-    editMode = !editMode;
+
+  async function clear() {
+    todos = await (
+      await $authGet("/api/todo/clear", { method: "post" })
+    ).json();
   }
 </script>
 
@@ -80,9 +65,10 @@
         ]}
       />
       <button type="submit">+</button>
-      <button type="button" on:click={toggleEdit}
+      <button type="button" on:click={() => (editMode = !editMode)}
         >{editMode ? "Done" : "Edit"}</button
       >
+      <button type="button" on:click={clear}>Clear done</button>
     </div>
   </form>
   {#each todos as todo, i}

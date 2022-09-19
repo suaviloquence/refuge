@@ -33,6 +33,8 @@ struct Update {
 	text: Option<String>,
 	#[serde(default)]
 	completed: Option<bool>,
+	#[serde(default)]
+	cleared: Option<bool>,
 }
 
 async fn update(
@@ -58,6 +60,10 @@ async fn update(
 		todo.completed = completed;
 	}
 
+	if let Some(cleared) = body.0.cleared {
+		todo.cleared = cleared;
+	}
+
 	todo.update(con.as_ref()).await.into_500()?;
 
 	Ok(HttpResponse::Ok().json(todo))
@@ -76,22 +82,44 @@ async fn create(req: HttpRequest, con: web::Data<Pool>, body: web::Json<Create>)
 		.username()
 		.to_owned();
 
-	let todo = Todo::create(username, body.0.text, 0, false, con.as_ref())
+	let todo = Todo::create(username, body.0.text, 0, false, false, con.as_ref())
 		.await
 		.into_500()?;
 
 	Ok::<_, actix_web::Error>(HttpResponse::Ok().json(todo))
 }
 
+async fn clear_all(req: HttpRequest, con: web::Data<Pool>) -> impl Responder {
+	let xs = req.extensions();
+	let username = xs.get::<AuthClaims>().unwrap().username();
+
+	sqlx::query!(
+		"UPDATE todos SET cleared = TRUE WHERE username = $1 AND completed AND NOT cleared",
+		username
+	)
+	.execute(con.as_ref())
+	.await
+	.into_500()?;
+
+	Ok::<_, actix_web::Error>(
+		HttpResponse::Ok().json(
+			Todo::get_by_username(username, con.as_ref())
+				.await
+				.into_500()?,
+		),
+	)
+}
+
 pub(super) fn configure(cfg: &mut web::ServiceConfig) {
 	cfg.service(
 		web::scope("")
+			.service(web::resource("/clear").route(web::post().to(clear_all)))
 			.service(web::resource("/{id}").route(web::put().to(update)))
-			.wrap(Authenticated)
 			.service(
 				web::resource("")
 					.route(web::get().to(get_all))
 					.route(web::post().to(create)),
-			),
+			)
+			.wrap(Authenticated),
 	);
 }
